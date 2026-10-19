@@ -46,7 +46,9 @@ pub fn getMetrics(self: Face) Metrics {
 }
 
 pub fn getOS2Table(self: Face) ?*const c.TT_OS2 {
-    return @ptrCast(@alignCast(c.FT_Get_Sfnt_Table(self.ref, c.FT_SFNT_OS2)));
+    const ref = c.FT_Get_Sfnt_Table(self.ref, c.FT_SFNT_OS2) orelse return null;
+    const table: *const c.TT_OS2 = @ptrCast(@alignCast(ref));
+    return if (table.version == 0xffff) null else table;
 }
 
 /// Copies a raw SFNT table. The tag uses big-endian order (e.g. 0x4f532f32
@@ -83,8 +85,9 @@ pub fn selectCharmap(self: Face, encoding: c.FT_Encoding) errors.Error!void {
 }
 
 /// Returns zero when the active charmap has no glyph for the codepoint.
-pub fn getCharIndex(self: Face, codepoint: u21) c.FT_UInt {
-    return c.FT_Get_Char_Index(self.ref, codepoint);
+pub fn getCharIndex(self: Face, codepoint: u21) ?u32 {
+    const index = c.FT_Get_Char_Index(self.ref, codepoint);
+    return if (index == 0) null else index;
 }
 
 pub fn setCharSize(
@@ -94,10 +97,15 @@ pub fn setCharSize(
     h_dpi: c.FT_UInt,
     v_dpi: c.FT_UInt,
 ) errors.Error!void {
-    try errors.check(c.FT_Set_Char_Size(self.ref, width, height, h_dpi, v_dpi));
+    try errors.check(c.FT_Set_Char_Size(
+        self.ref,
+        width,
+        height,
+        h_dpi,
+        v_dpi,
+    ));
 }
 
-/// Selects an integer pixel size, including bitmap-only fonts.
 pub fn setPixelSizes(self: Face, width: c.FT_UInt, height: c.FT_UInt) errors.Error!void {
     try errors.check(c.FT_Set_Pixel_Sizes(self.ref, width, height));
 }
@@ -110,11 +118,7 @@ pub fn getSizeMetrics(self: Face) ?c.FT_Size_Metrics {
 pub fn setTransform(self: Face, matrix: ?c.FT_Matrix, delta: ?c.FT_Vector) void {
     var m = matrix;
     var d = delta;
-    c.FT_Set_Transform(
-        self.ref,
-        if (m) |*value| value else null,
-        if (d) |*value| value else null,
-    );
+    c.FT_Set_Transform(self.ref, if (m) |*value| value else null, if (d) |*value| value else null);
 }
 
 /// Replaces the face's current glyph slot and invalidates its previous bitmap.

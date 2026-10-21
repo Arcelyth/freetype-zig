@@ -14,10 +14,10 @@ jobs:
       - name: Checkout
         uses: https://code.forgejo.org/actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install build tools
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends ca-certificates curl git xz-utils libc6-dev libfreetype6-dev pkg-config fonts-dejavu-core
+          apt-get install -y --no-install-recommends ca-certificates curl git xz-utils libc6-dev
 
       - name: Install Zig 0.17.0
         run: |
